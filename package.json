@@ -1,0 +1,35 @@
+{
+  "name": "osm-oauth-connection",
+  "version": "1.0.0",
+  "description": "Overrides the Oauth in the OSM Rails App to use Oauth from an external server",
+  "dependencies": {
+    "cookie-parser": "^1.4.5",
+    "cors": "^2.8.5",
+    "express": "^4.17.1",
+    "oauth": "^0.9.15",
+    "pg": "^8.6.0",
+    "xml-js": "^1.6.11",
+    "xml2js": "^0.4.23"
+  },
+  "devDeoendencies": {
+    "nodemon": "^2.0.7",
+    "eslint": "7.26.0"
+  },
+  "main": "app.mjs",
+  "scripts": {
+    "test": "node ./tests/run_all.mjs",
+    "start": "node app.mjs",
+    "watch": "nodemon app.mjs"
+  },
+  "keywords": [
+    "OSM",
+    "Public",
+    "Domain"
+  ],
+  "author": "James McAndrew <jim@loc8.us>",
+  "license": "CC0-1.0",
+  "devDependencies": {
+    "eslint": "^7.27.0",
+    "tape": "^5.2.2"
+  }
+}
