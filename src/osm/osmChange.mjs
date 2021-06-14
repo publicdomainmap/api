@@ -74,13 +74,19 @@ const changeElement = class extends Element {
           // TODO Run as a transaction, and rollback on error
           const orderedQueue = Object.keys(queue)
             .sort((a,b) => parseInt(a, 10) - parseInt(b, 10));
-          for (let i=0; i < orderedQueue.length; i++) {
-            await Promise.all(queue[orderedQueue[i]].map(req =>
-              query(req[0], req[1]))
-            );
-          } 
-          return queue;
-        }
+          await query('BEGIN');
+          try {
+            for (let i=0; i < orderedQueue.length; i++) {
+	      await Promise.all(queue[orderedQueue[i]].map(req =>
+		query(req[0], req[1]))
+	      );
+	      await query('COMMIT');
+	    }
+	  } catch (e) {
+	    await query('ROLLBACK');
+	  }
+	  return queue;
+	}
       };
     };
 
