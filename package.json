@@ -29,7 +29,7 @@
   "author": "James McAndrew <jim@loc8.us>",
   "license": "CC0-1.0",
   "devDependencies": {
-    "eslint": "^7.27.0",
+    "eslint": "^7.29.0",
     "tape": "^5.2.2"
   }
 }
