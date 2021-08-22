@@ -17,7 +17,8 @@ const addRoutes = (app, routes, authCommand, prefix) => routes.forEach((route) =
         middlewareFunctions.push(authCommand);
       }
     }
-    if (route.cors) {
+    if (route.cors === undefined) {
+      // Default to CORS
       middlewareFunctions.push(cors());
       app.options(route.path, cors());
     }
