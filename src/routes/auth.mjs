@@ -6,18 +6,18 @@ import { xml2js } from 'xml-js';
 import { default as https } from 'https';
 import { default as http } from 'http';
 
-// const config = {
-//   protocol: process.env['NODE_OAUTH_PROTOCOL'],
-//   server: process.env['NODE_OAUTH_SERVER'],
-//   consumerKey: process.env['NODE_OAUTH_CONSUMER_KEY'],
-//   consumerSecret: process.env['NODE_OAUTH_CONSUMER_SECRET']
-// };
 const config = {
   protocol: process.env['NODE_OAUTH_PROTOCOL'],
-  server: 'api06.dev.openstreetmap.org',
-  consumerKey: 'uqwVDaXN8FOh1fgnkbugoZFP0pHr8ILWKS8yMpp1',
-  consumerSecret: 'AgrpoHJwTJBhEBbLu7xxI2DE6rjJPdMxp9Qt7gtv'
+  server: process.env['NODE_OAUTH_SERVER'],
+  consumerKey: process.env['NODE_OAUTH_CONSUMER_KEY'],
+  consumerSecret: process.env['NODE_OAUTH_CONSUMER_SECRET']
 };
+//const config = {
+//  protocol: process.env['NODE_OAUTH_PROTOCOL'],
+//  server: 'api06.dev.openstreetmap.org',
+//  consumerKey: 'uqwVDaXN8FOh1fgnkbugoZFP0pHr8ILWKS8yMpp1',
+//  consumerSecret: 'AgrpoHJwTJBhEBbLu7xxI2DE6rjJPdMxp9Qt7gtv'
+//};
 
 
 const awaitify = (fn, ctx) => {
