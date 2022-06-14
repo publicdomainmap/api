@@ -3,11 +3,11 @@
   "version": "1.0.0",
   "description": "Overrides the Oauth in the OSM Rails App to use Oauth from an external server",
   "dependencies": {
-    "cookie-parser": "^1.4.5",
+    "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
-    "express": "^4.17.1",
+    "express": "^4.18.1",
     "oauth": "^0.9.15",
-    "pg": "^8.7.1",
+    "pg": "^8.7.3",
     "xml-js": "^1.6.11",
     "xml2js": "^0.4.23"
   },
@@ -29,7 +29,7 @@
   "author": "James McAndrew <jim@loc8.us>",
   "license": "CC0-1.0",
   "devDependencies": {
-    "eslint": "^8.2.0",
-    "tape": "^5.3.1"
+    "eslint": "^8.17.0",
+    "tape": "^5.5.3"
   }
 }
