@@ -6,20 +6,30 @@ import { xml2js } from 'xml-js';
 import { default as https } from 'https';
 import { default as http } from 'http';
 
+/**
+ * Configuration object for OAuth.
+ * 
+ * @typedef {Object} Config
+ * @property {string} protocol - The protocol for the OAuth server (taken from the environment variable `NODE_OAUTH_PROTOCOL`)
+ * @property {string} server - The OAuth server (taken from the environment variable `NODE_OAUTH_SERVER`)
+ * @property {string} consumerKey - The consumer key for the OAuth server (taken from the environment variable `NODE_OAUTH_CONSUMER_KEY`)
+ * @property {string} consumerSecret - The consumer secret for the OAuth server (taken from the environment variable `NODE_OAUTH_CONSUMER_SECRET`)
+ */
 const config = {
   protocol: process.env['NODE_OAUTH_PROTOCOL'],
   server: process.env['NODE_OAUTH_SERVER'],
   consumerKey: process.env['NODE_OAUTH_CONSUMER_KEY'],
   consumerSecret: process.env['NODE_OAUTH_CONSUMER_SECRET']
 };
-//const config = {
-//  protocol: process.env['NODE_OAUTH_PROTOCOL'],
-//  server: 'api06.dev.openstreetmap.org',
-//  consumerKey: 'uqwVDaXN8FOh1fgnkbugoZFP0pHr8ILWKS8yMpp1',
-//  consumerSecret: 'AgrpoHJwTJBhEBbLu7xxI2DE6rjJPdMxp9Qt7gtv'
-//};
 
-
+/**
+ * Returns a Promise-based wrapper around a callback-based function.
+ * 
+ * @function
+ * @param {function} fn - The callback-based function to be wrapped
+ * @param {*} ctx - The context for the function
+ * @returns {function} A Promise-based version of the function
+ */
 const awaitify = (fn, ctx) => {
   return function () {
     return new Promise((res, rej) => {
@@ -33,9 +43,15 @@ const awaitify = (fn, ctx) => {
   };
 };
 
-// AUTH
-//
-// Auth section
+/**
+ * Middleware that requires authentication for a route.
+ * 
+ * @function
+ * @async
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {function} next - Express next middleware function
+ */
 export const requireAuth = async (req, res, next) => {
   const auth = req.headers.authorization || '';
   const authTags = auth
@@ -88,12 +104,23 @@ export const requireAuth = async (req, res, next) => {
 //
 
 const tools = {
+  /**
+    getTokenSecret retrieves the request_token_secret, access_token, and access_token_secret for a given request token from the database.
+    @async
+    @memberof tools
+    @param {string} token - request token
+    @returns {Array} Array containing the request_token_secret, access_token, and access_token_secret.
+  */
   'getTokenSecret': async (token) => {
     const sql = 'SELECT request_token_secret, access_token, access_token_secret FROM oauth.sessions WHERE request_token = $1';
     const values = [token];
     const result = await query(sql, values);
     return result.rows[0] && [result.rows[0].request_token_secret, result.rows[0].access_token, result.rows[0].access_token_secret];
   },
+  /**
+    osmAuth is an instance of the OAuth object for authentication with OpenStreetMap.
+    @memberof tools
+  */
   'osmAuth': new oauth.OAuth(
     config.protocol + '://' + config.server + '/oauth/request_token',
     config.protocol + '://' + config.server + '/oauth/access_token',
@@ -103,6 +130,13 @@ const tools = {
     null,
     'HMAC-SHA1'
   ),
+  /**
+    getBasicUserInfo retrieves user information from the OpenStreetMap server using basic authentication.
+    @async
+    @memberof tools
+    @param {string} auth - Authorization header value
+    @returns {Array} Array containing the display_name and id of the user.
+  */
   'getBasicUserInfo': async (auth) => {
     // Try to get the user capabilities from the main server
     const options = {
@@ -197,7 +231,16 @@ const tools = {
   }
 };
 
-
+/**
+ * An array of route objects. Each object contains information about a specific route, such as its path, type, and
+ * handling function.
+ * @typedef {Object} Route
+ * @property {string} path - The URL path for the route.
+ * @property {string} type - The HTTP method for the route, either "post" or "get".
+ * @property {function} [auth] - An optional function that checks if the request is authorized.
+ * @property {function} fn - The handling function for the route, which takes in a request and response object.
+ * @type {Route[]}
+ */
 const routes = [{
   'path': '/access_token',
   'type': 'post',
