@@ -6,6 +6,7 @@ import { default as api06Routes } from './src/routes/api06.mjs';
 import { default as capabilities} from './src/routes/capabilities.mjs';
 import { default as authRoutes, requireAuth } from './src/routes/auth.mjs';
 import addRoutes from './src/addRoutes.mjs';
+import xmlBody from './src/xmlBody.mjs';
 
 // Constants
 const PORT = process.env['NODE_SERVER_PORT'];
@@ -18,25 +19,9 @@ const app = express();
 // app.use(bodyParser.raw());
 // TODO: Move this
 import { xml2js } from 'xml-js';
-app.use(function(req, res, next) {
-  req.rawBody = '';
 
-  req.on('data', function(chunk) { 
-    req.rawBody += chunk;
-  });
-
-  req.on('end', function() {
-    if (req.headers['content-type'] === 'text/xml') {
-      req.rawXML = req.rawBody;
-      try {
-        req.rawJSON = xml2js(req.rawBody, {'compact': true});
-      } catch(e) {
-        req.rawJSON = {};
-      }
-    }
-    next();
-  });
-});
+// Attach a `rawBody` property to the request object based on the content-type (xml or JSON)
+xmlBody(app);
 
 // Add the routes
 addRoutes(app, authRoutes, requireAuth, '/oauth');
