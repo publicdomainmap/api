@@ -9,11 +9,19 @@ const pool = new pg.Pool({
   port: parseInt(process.env['PGPORT'] || '5432', 10)
 });
 
+/**
+ * Execute a SQL query against the database.
+ * @param {string} sql - The SQL query to execute.
+ * @param {Array} values - The values to use as parameters in the query.
+ * @returns {Promise} A Promise that resolves to the query result, or null if there was an error.
+ */
 const query = async function(sql, values) {
+  // Get a connection from the pool
   const client = await pool.connect();
   console.log('SQL', sql, values);
   let returnValue = null;
   try {
+    // Execute the query
     const res = await client.query(sql, values);
     // Convert BigInt strings to JavaScript BigInts
     res.rows = res.rows.map(row => {
@@ -24,16 +32,16 @@ const query = async function(sql, values) {
       });
       return row;
     });
+    // Set the return value to the query result
     returnValue = res;
   } catch(e) {
-    // TODO return error
+    // TODO: Handle the error better than this!
     console.error('error', e);
   } finally {
-    // Make sure to release the client before any error handling,
-    // just in case the error handling itself throws an error.
+    // Release the connection back to the pool
     client.release();
   }
+  // Return the query result, or null if there was an error
   return returnValue;
 };
-
 export default query;
