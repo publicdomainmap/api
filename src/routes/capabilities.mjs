@@ -1,12 +1,22 @@
 import {apiResponse} from '../osm/apiResponse.mjs';
 
 const Api = class {
+  /**
+   * Create an API.
+   * @param {Object} data - An object containing the API data.
+   */
   constructor(data) {
+    // Set the API type and copy the data properties to the instance
     this.type = 'api';
     Object.keys(data).forEach(key => this[key] = data[key]);
   }
 
+  /**
+   * Convert the API to an XML object using xml2js.
+   * @returns {Object} An object representation of the API, suitable for conversion to XML.
+   */
   toXmlJs() {
+    // Filter out the "type" property, and format the remaining properties as XML attributes
     return Object.keys(this)
       .filter(key => key !== 'type')
       .reduce((a,v)=>({...a,[v]: {'_attributes': this[v]}}),{});
