@@ -24,11 +24,12 @@ const Api = class {
 };
 
 export default [{
+  // https://wiki.openstreetmap.org/wiki/API_v0.6#Capabilities:_GET_/api/capabilities
   'path': '/capabilities.:format?',
   'type': 'get',
   'fn': (req, res) => {
-    // TODO: Use values from env instead of hardcoded values that do nothing
-    // TODO: openstreetmap-cgimap should also be configurable from the env variables
+    // TODO: Use environment variables instead of hardcoded values
+    // Create an Api object with hardcoded properties
     const apiInfo = new Api ({
       'version': {'minimum': '0.6', 'maximum': '0.6'},
       'area': {'maximum': '0.25'},
@@ -39,6 +40,7 @@ export default [{
       'timeout': {'seconds': '300'},
       'status': {'database': 'online', 'api': 'online', 'gpx': 'offline'}
     });
+    // Send the API response to the client with the requested format and row type
     apiResponse(res, req.params.format, [apiInfo], {'rowType': 'element'}); 
   }
 }];
