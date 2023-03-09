@@ -1,7 +1,7 @@
 
 # 🗺️🌐 PublicDomainMap API
 
-This API manipulate the OpenStreetMap database. The API is RESTful, meaning that it follows the principles of Representational State Transfer (REST) architectural style.
+This API manipulate the OpenStreetMap database. The API is RESTful, meaning that it follows the principles of Representational State Transfer (REST) architectural style. This supports a subset of the endpoints from the [OpenStreetMap 0.6 API](https://wiki.openstreetmap.org/wiki/API_v0.6).
 
 ## 🔐 Authentication
 
