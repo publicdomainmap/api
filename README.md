@@ -29,12 +29,12 @@ Tests are included, currently using [jest](https://www.npmjs.com/package/jest). 
 
 ## 📝 Improvements
 I would like to improve this project in a number of ways:
-[x] Migrate tests to [Jest](https://jestjs.io/)
-[x] Migrate Code from MJS to TS
-* OAUTH2 Support
-[x] Fix issues with JOSM, which uses more of the API than iD
-* Set up automated testing and deploying directly from Github
-* Many more ideas in the [issues](https://github.com/publicdomainmap/api/issues)
+- [x] Migrate tests to [Jest](https://jestjs.io/)
+- [x] Migrate Code from MJS to TS
+- [ ] OAUTH2 Support
+- [x] Fix issues with JOSM, which uses more of the API than iD
+- [ ] Set up automated testing and deploying directly from Github
+- [ ] Many more ideas in the [issues](https://github.com/publicdomainmap/api/issues)
 
 ## 🏗️ Built With
 
