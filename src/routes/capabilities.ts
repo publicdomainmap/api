@@ -1,46 +1,60 @@
-import {apiResponse} from '../osm/apiResponse.mjs';
+import { Request, Response } from 'express';
+import { Route } from '../addRoutes';
+import { apiResponse } from '../osm/apiResponse';
+import ResponseObject from '../osm/responseObject';
 
-const Api = class {
-  /**
-   * Create an API.
-   * @param {Object} data - An object containing the API data.
-   */
-  constructor(data) {
-    // Set the API type and copy the data properties to the instance
-    this.type = 'api';
-    Object.keys(data).forEach(key => this[key] = data[key]);
-  }
 
-  /**
-   * Convert the API to an XML object using xml2js.
-   * @returns {Object} An object representation of the API, suitable for conversion to XML.
-   */
-  toXmlJs() {
-    // Filter out the "type" property, and format the remaining properties as XML attributes
-    return Object.keys(this)
-      .filter(key => key !== 'type')
-      .reduce((a,v)=>({...a,[v]: {'_attributes': this[v]}}),{});
-  }
-};
+interface ApiData {
+    version?: { minimum: string; maximum: string };
+    area?: { maximum: string };
+    note_area?: { maximum: string };
+    tracepoints?: { per_page: string };
+    waynodes?: { maximum: string };
+    changesets?: { maximum: string };
+    timeout?: { seconds: string };
+    status?: { database: string; api: string; gpx: string };
+}
 
-export default [{
-  // https://wiki.openstreetmap.org/wiki/API_v0.6#Capabilities:_GET_/api/capabilities
-  'path': '/capabilities.:format?',
-  'type': 'get',
-  'fn': (req, res) => {
-    // TODO: Use environment variables instead of hardcoded values
-    // Create an Api object with hardcoded properties
-    const apiInfo = new Api ({
-      'version': {'minimum': '0.6', 'maximum': '0.6'},
-      'area': {'maximum': '0.25'},
-      'note_area': {'maximum': '25'},
-      'tracepoints': {'per_page': '50000'},
-      'waynodes': {'maximum': '2000'},
-      'changesets': {'maximum': '10000'},
-      'timeout': {'seconds': '300'},
-      'status': {'database': 'online', 'api': 'online', 'gpx': 'offline'}
-    });
-    // Send the API response to the client with the requested format and row type
-    apiResponse(res, req.params.format, [apiInfo], {'rowType': 'element'}); 
-  }
-}];
+export class Api extends ResponseObject {
+    static types = {
+        version: Object,
+        area: Object,
+        note_area: Object,
+        tracepoints: Object,
+        waynodes: Object,
+        changesets: Object,
+        timeout: Object,
+        status: Object
+    }
+
+    constructor(data: ApiData) {
+        super(data, Api.types);
+        this.type = 'api';
+    }
+
+    toXmlJs() {
+        return Object.entries(this.data)
+            .filter(([key]) => key !== 'type')
+            .reduce((a, [key, value]) => ({ ...a, [key]: { _attributes: value } }), {}) as any;
+    }
+}
+
+export default [
+    {
+        path: '/capabilities.:format?',
+        method: 'get',
+        fn: (req: Request, res: Response) => {
+            const apiInfo = new Api({
+                version: { minimum: '0.6', maximum: '0.6' },
+                area: { maximum: '0.25' },
+                note_area: { maximum: '25' },
+                tracepoints: { per_page: '50000' },
+                waynodes: { maximum: '2000' },
+                changesets: { maximum: '10000' },
+                timeout: { seconds: '300' },
+                status: { database: 'online', api: 'online', gpx: 'offline' },
+            });
+            apiResponse(res, req.params.format, [apiInfo], { rowType: 'element' });
+        },
+    },
+] as Array<Route>;

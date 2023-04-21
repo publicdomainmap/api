@@ -1,279 +1,46 @@
-/* global process */
-import { default as oauth } from 'oauth';
-import { default as query } from '../db.mjs';
-import { default as sqlStatements } from '../sql/auth.mjs';
-import { xml2js } from 'xml-js';
-import { default as https } from 'https';
-import { default as http } from 'http';
+import { Request, Response } from 'express';
+import { Route } from '../addRoutes';
+import { tools, config, requireAuth, Auth } from '../middleware/requireAuth'
 
-/**
- * Configuration object for OAuth.
- * 
- * @typedef {Object} Config
- * @property {string} protocol - The protocol for the OAuth server (taken from the environment variable `NODE_OAUTH_PROTOCOL`)
- * @property {string} server - The OAuth server (taken from the environment variable `NODE_OAUTH_SERVER`)
- * @property {string} consumerKey - The consumer key for the OAuth server (taken from the environment variable `NODE_OAUTH_CONSUMER_KEY`)
- * @property {string} consumerSecret - The consumer secret for the OAuth server (taken from the environment variable `NODE_OAUTH_CONSUMER_SECRET`)
- */
-const config = {
-  protocol: process.env['NODE_OAUTH_PROTOCOL'],
-  server: process.env['NODE_OAUTH_SERVER'],
-  consumerKey: process.env['NODE_OAUTH_CONSUMER_KEY'],
-  consumerSecret: process.env['NODE_OAUTH_CONSUMER_SECRET']
-};
+export const authRoutes: Route[] = [{
+    path: '/access_token',
+    method: 'post',
+    auth: requireAuth as any,
+    fn: async (req: Request, res: Response) => {
+        const authReq = (req as Request & { auth?: Auth });
 
-/**
- * Returns a Promise-based wrapper around a callback-based function.
- * 
- * @function
- * @param {function} fn - The callback-based function to be wrapped
- * @param {*} ctx - The context for the function
- * @returns {function} A Promise-based version of the function
- */
-const awaitify = (fn, ctx) => {
-  return function () {
-    return new Promise((res, rej) => {
-      let args = [...arguments];
-      args.push(function () {
-        let subargs =  [...arguments];
-        return subargs[0] ? rej(subargs[0]) : res(subargs.slice(1));
-      });
-      fn.apply(ctx || this, args);
-    });
-  };
-};
-
-/**
- * Middleware that requires authentication for a route.
- * 
- * @function
- * @async
- * @param {Object} req - Express request object
- * @param {Object} res - Express response object
- * @param {function} next - Express next middleware function
- */
-export const requireAuth = async (req, res, next) => {
-  const auth = req.headers.authorization || '';
-  const authTags = auth
-    .replace(/"/g,'')
-    .split(/[\s,]/g)
-    .filter(v => v.indexOf('=')>-1)
-    .map(v => v.split('='))
-    .reduce((a,v) => ({...a, [v[0]]: v[1]}),{});
-
-  if (authTags.oauth_token) {
-    try {
-      let [tokenSecret, oauthAccessToken, oauthAccessTokenSecret] = await tools.getTokenSecret(authTags.oauth_token);
-      if (!oauthAccessToken && !oauthAccessTokenSecret) {
-        [oauthAccessToken, oauthAccessTokenSecret] = await awaitify(tools.osmAuth.getOAuthAccessToken, tools.osmAuth)(authTags.oauth_token, tokenSecret);
-      }
-      // Get the user info
-      const [username, userid] = await tools.getUserInfo(authTags.oauth_token, tokenSecret, oauthAccessToken, oauthAccessTokenSecret);
-      req.auth = {
-        'oauth_token': authTags.oauth_token,
-        'oauth_token_secret': tokenSecret,
-        'oauth_access_token': oauthAccessToken,
-        'oauth_access_token_secret': oauthAccessTokenSecret,
-        'username': username,
-        'userId': userid
-      };
-    } catch(e) {
-      console.log('auth error', e, e.stack);
-    } finally {
-      next();
-    }
-  } else if (typeof auth === 'string' && auth.split(' ')[0] === 'Basic') {
-    try {
-      console.log('AUTH', typeof auth);
-      const [username, userid] = await tools.getBasicUserInfo(auth);
-      req.auth = {
-        'oauth_token': null,
-        'oauth_token_secret': null,
-        'oauth_access_token': null,
-        'oauth_access_token_secret': null,
-        'username': username,
-        'userId': userid
-      };
-    } finally {
-      next();
-    }
-  } else {
-    next();
-  }
-};
-//
-
-const tools = {
-  /**
-    getTokenSecret retrieves the request_token_secret, access_token, and access_token_secret for a given request token from the database.
-    @async
-    @memberof tools
-    @param {string} token - request token
-    @returns {Array} Array containing the request_token_secret, access_token, and access_token_secret.
-  */
-  'getTokenSecret': async (token) => {
-    const sql = 'SELECT request_token_secret, access_token, access_token_secret FROM oauth.sessions WHERE request_token = $1';
-    const values = [token];
-    const result = await query(sql, values);
-    return result.rows[0] && [result.rows[0].request_token_secret, result.rows[0].access_token, result.rows[0].access_token_secret];
-  },
-  /**
-    osmAuth is an instance of the OAuth object for authentication with OpenStreetMap.
-    @memberof tools
-  */
-  'osmAuth': new oauth.OAuth(
-    config.protocol + '://' + config.server + '/oauth/request_token',
-    config.protocol + '://' + config.server + '/oauth/access_token',
-    config.consumerKey,
-    config.consumerSecret,
-    '1.0',
-    null,
-    'HMAC-SHA1'
-  ),
-  /**
-    getBasicUserInfo retrieves user information from the OpenStreetMap server using basic authentication.
-    @async
-    @memberof tools
-    @param {string} auth - Authorization header value
-    @returns {Array} Array containing the display_name and id of the user.
-  */
-  'getBasicUserInfo': async (auth) => {
-    // Try to get the user capabilities from the main server
-    const options = {
-      host: config.server,
-      port: config.protocol === 'https' ?  443 : 80,
-      path: '/api/0.6/user/details.xml',
-      method: 'GET',
-      headers: { 'Authorization': auth }
-    };
-    let userData = await new Promise((resolve) => {
-      (config.protocol === 'https' ? https : http).get(options, res => {
-        let data = '';
-        res.on('data', chunk => { data += chunk; }); 
-        res.on('end', () => {
-          let json;
-          try {
-            console.log('DATAR', data);
-            json = xml2js(data, {'compact': true});
-          } finally {
-            resolve(json);
-          }
-        });
-      }); 
-    });
-
-    await tools.addUser('Basic', userData.osm.user);
-    return ([userData.osm.user._attributes.display_name, userData.osm.user._attributes.id]);
-  },
-  'getUserInfo': async (token, tokenSecret, accessToken, accessTokenSecret) => {
-    const sql = `SELECT sessions.user_id, users.display_name
-      FROM oauth.sessions JOIN public.users ON sessions.user_id = users.id
-      WHERE sessions.access_token=$1 AND sessions.access_token_secret=$2`;
-    const result = await query(sql, [accessToken, accessTokenSecret]);
-    if (result.rows[0] && result.rows[0].user_id) {
-      // User Exists!
-      return ({'name': result.rows[0].display_name, 'id': result.rows[0].user_id});
-    } else {
-      // If the user doesn't exist, pull the user information from the external server
-      const userDataXML = await awaitify(tools.osmAuth.get, tools.osmAuth)(
-        config.protocol + '://' + config.server + '/api/0.6/user/details',
-        accessToken,
-        accessTokenSecret);
-      const userData = xml2js(userDataXML[0], {'compact': true});
-
-      await tools.addUser([token, tokenSecret, accessToken, accessTokenSecret], userData.osm.user);
-
-      return ([userData.osm.user._attributes.display_name, userData.osm.user._attributes.id]);
-    }
-  },
-  'addToken': async (token, tokenSecret) => {
-    await query(sqlStatements.addSession, [token, tokenSecret]);
-    query(sqlStatements.removeOldSessions);
-    return true;
-  },
-  'addUser': async (tokens, userData) => {
-    // Not all users have a home, so default their location to the white house
-    userData.home = userData.home || {
-      'lat': '38.893889',
-      'lon': '-77.0425',
-      'zoom': '3'
-    };
-
-    const newUserValues = [
-      userData._attributes.id,
-      userData._attributes.account_created,
-      userData._attributes.display_name,
-      userData.home.lat,
-      userData.home.lon,
-      userData.home.zoom,
-      userData['contributor-terms']._attributes.pd,
-      userData.changesets._attributes.count,
-      userData.traces._attributes.count
-    ];
-
-    try {
-      await query(sqlStatements.createUser, newUserValues);
-
-      if (tokens !== 'Basic') {
-        await query(`UPDATE oauth.sessions SET
-          access_token = $3,
-          access_token_secret = $4,
-          user_id = $5
-        WHERE
-          request_token = $1 AND
-          request_token_secret = $2;`, [...tokens, userData.id]);
-      }
-
-      return true;
-    } catch(e) {
-      return false; // todo false on fail
-    }
-  }
-};
-
-/**
- * An array of route objects. Each object contains information about a specific route, such as its path, type, and
- * handling function.
- * @typedef {Object} Route
- * @property {string} path - The URL path for the route.
- * @property {string} type - The HTTP method for the route, either "post" or "get".
- * @property {function} [auth] - An optional function that checks if the request is authorized.
- * @property {function} fn - The handling function for the route, which takes in a request and response object.
- * @type {Route[]}
- */
-const routes = [{
-  'path': '/access_token',
-  'type': 'post',
-  'auth': requireAuth,
-  'fn': async (req, res) => {
-    if (req.auth) {
-      res.send([
-        'oauth_token=', req.auth.oauth_token,
-        '&oauth_token_secret=', req.auth.oauth_token_secret,
-        '&username=', req.auth.username,
-        '&userId=', req.auth.userId
-      ].join(''));
-    } else {
-      res.json(['unauthorized']);
-    }
-  }
-}, {
-  'path': '/request_token',
-  'type': 'post',
-  'fn': async (req, res) => {
-    try {
-      const [token, tokenSecret] = await awaitify(tools.osmAuth.getOAuthRequestToken, tools.osmAuth)();
-      await tools.addToken(token, tokenSecret);
-      res.send(['oauth_token=', token, '&oauth_token_secret=', tokenSecret].join(''));
-    } catch(e) {
-      res.json({'error': e});
-    }
-  }
-}, {
-  'path': '/authorize',
-  'type': 'get',
-  'fn': (req, res) => res.redirect(config.protocol + '://' + config.server + req.originalUrl)
-}
-];
-
-export default routes;
+        if (authReq.auth) {
+            res.send([
+                'oauth_token=', authReq.auth.oauth_token,
+                '&oauth_token_secret=', authReq.auth.oauth_token_secret,
+                '&username=', authReq.auth.username,
+                '&userId=', authReq.auth.userId,
+            ].join(''));
+        } else {
+            res.json(['unauthorized']);
+        }
+    },
+},
+{
+    path: '/request_token',
+    method: 'post',
+    fn: async (req: Request, res: Response) => {
+        try {
+            const [token, tokenSecret] = (await new Promise((resolve, reject) => {
+                tools.osmAuth.getOAuthRequestToken(
+                    ((err: { statusCode: number; data?: any; }, token: string, token_secret: string) =>
+                        err ? reject(err) : resolve([token, token_secret])
+                    ))
+            })) as [string, string];
+            await tools.addToken(token, tokenSecret);
+            res.send(['oauth_token=', token, '&oauth_token_secret=', tokenSecret].join(''));
+        } catch (e) {
+            res.json({ error: e });
+        }
+    },
+},
+{
+    path: '/authorize',
+    method: 'get',
+    fn: (req: Request, res: Response) => res.redirect(config.protocol + '://' + config.server + req.originalUrl),
+}];

@@ -1,4 +1,6 @@
-import cors from 'cors';
+import { Application, NextFunction, Request, Response } from 'express';
+import cors, { CorsOptions } from 'cors';
+import xmlBody from './middleware/xmlBody';
 
 /**
  * This function takes an Express app object,
@@ -15,71 +17,81 @@ import cors from 'cors';
  * This function returns void, as it modifies the app object in place.
  */
 
+type routeMethods = 'get' | 'post' | 'put' | 'delete';
+
+export interface Route {
+    method: routeMethods | routeMethods[];
+    path: string;
+    fn: (req: Request, res: Response, next?: NextFunction) => void;
+    auth?: (req: Request, res: Response, next?: NextFunction) => void;
+    xmlBody?: ((req: Request, res: Response, next?: NextFunction) => void) | false;
+    cors?: CorsOptions | false;
+}
+
 /**
  * Adds routes to an Express app, including middleware functions and authentication checks.
  *
  * @param {Object} app - The Express app to add routes to.
  * @param {Array<Object>} routes - An array of route objects, each containing a type, path, and function to execute.
- * @param {Function} authCommand - The authentication function to use, if specified in a route object.
  * @param {string} prefix - A prefix to add to each route path, if specified.
  *
  * @returns {void}
  */
-const addRoutes = (app, routes, authCommand, prefix) => {
+const addRoutes = (
+    app: Application,
+    routes: Route[],
+    prefix?: string
+): void => {
+    const expandedRoutes = routes.flatMap(route => Array.isArray(route.method) ? route.method.map(method => ({ ...route, method })) : route) as Array<Route & { method: routeMethods }>;
+    expandedRoutes.forEach((route) => {
+        prefix = prefix || '';
 
-  // Iterate through each route and add it to the app
-  routes.forEach((route) => {
-
-    // Set prefix to an empty string if it is not provided
-    prefix = prefix || '';
-
-    if (!route.path) {
-      // If the route does not have a path, it is a "use" function
-      app[route.type](route.fn);
-    } else {
-      // If the route has a path, add middleware functions and the route function
-
-      // Create an empty array to hold the middleware functions for this route
-      let middlewareFunctions = [];
-
-      // If the route has an auth function, add it to the middleware functions array
-      if (route.auth) {
-        if (typeof route.auth === 'function') {
-          middlewareFunctions.push(route.auth);
+        if (!route.path) {
+            (app as any)[route.method](route.fn);
         } else {
-          middlewareFunctions.push(authCommand);
-        }
-      }
+            let middlewareFunctions: Array<(req: Request, res: Response, next: NextFunction) => void> = [];
 
-      // If the route does not have a CORS option specified, add the default CORS middleware function
-      if (route.cors === undefined) {
-        middlewareFunctions.push(cors());
-        app.options(route.path, cors());
-      }
-
-      // Define a function to run the middleware functions in sequence
-      let runMiddleware = (req, res, next) => {
-
-        if (middlewareFunctions.length) {
-          let idx = 0;
-          let callback = function() {
-            idx++;
-            if (idx <= middlewareFunctions.length) {
-              return middlewareFunctions[idx-1](req, res, callback);
-            } else {
-              next();
+            if (route.auth && typeof route.auth === 'function') {
+                middlewareFunctions.push(route.auth);
             }
-          };
-          callback();
-        } else {
-          next();
-        }
-      };
 
-      // Add the route function with the middleware functions to the app
-      app[route.type](prefix + route.path, runMiddleware, route.fn);
-    }
-  });
+            if (route.cors === undefined) {
+                middlewareFunctions.push(cors());
+                (app.options as any)(route.path, cors());
+            }
+
+            if (route.xmlBody !== false) {
+                if (typeof route.xmlBody === 'function') {
+                    middlewareFunctions.push(route.xmlBody);
+                } else {
+                    middlewareFunctions.push(xmlBody);
+                }
+            }
+
+            let runMiddleware = (req: Request, res: Response, next: NextFunction) => {
+                if (middlewareFunctions.length) {
+                    let idx = 0;
+                    let callback = function () {
+                        idx++;
+                        if (idx <= middlewareFunctions.length) {
+                            return middlewareFunctions[idx - 1](req, res, callback);
+                        } else {
+                            next();
+                        }
+                    };
+                    callback();
+                } else {
+                    next();
+                }
+            };
+
+            const wrapFn = (req: Request, res: Response, next?: NextFunction) => {
+                //console.log('Req:', req.method, req.originalUrl);
+                return route.fn(req, res, next);
+            }
+            (app as any)[route.method](prefix + route.path, runMiddleware, wrapFn);
+        }
+    });
 };
 
 export default addRoutes;

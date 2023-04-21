@@ -1,25 +1,20 @@
 {
-  "name": "osm-oauth-connection",
-  "version": "1.0.0",
-  "description": "Overrides the Oauth in the OSM Rails App to use Oauth from an external server",
+  "name": "pdmap-api",
+  "version": "1.1.0",
+  "description": "Supplies basic OSM API functions, provides alternate auth, forwards most requests to CGIMAP.",
   "dependencies": {
-    "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
-    "express": "^4.18.1",
-    "oauth": "^0.9.15",
-    "pg": "^8.7.3",
-    "xml-js": "^1.6.11",
-    "xml2js": "^0.4.23"
+    "express": "^4.18.2",
+    "oauth": "^0.10.0",
+    "pg": "^8.10.0",
+    "xml-js": "^1.6.11"
+
   },
-  "devDeoendencies": {
-    "nodemon": "^2.0.7",
-    "eslint": "7.26.0"
-  },
-  "main": "app.mjs",
   "scripts": {
-    "test": "node ./tests/run_all.mjs",
-    "start": "node app.mjs",
-    "watch": "nodemon app.mjs"
+    "test": "jest",
+    "start": "node ./dist/index.js",
+    "build": "tsc",
+    "watch": "nodemon --exec ts-node ./src/index.ts"
   },
   "keywords": [
     "OSM",
@@ -29,7 +24,18 @@
   "author": "James McAndrew <jim@loc8.us>",
   "license": "CC0-1.0",
   "devDependencies": {
-    "eslint": "^8.17.0",
-    "tape": "^5.5.3"
+    "@types/cors": "^2.8.13",
+    "@types/express": "^4.17.17",
+    "@types/jest": "^29.5.1",
+    "@types/node": "^18.15.12",
+    "@types/oauth": "^0.9.1",
+    "@types/pg": "^8.6.6",
+    "@types/supertest": "^2.0.12",
+    "jest": "^29.5.0",
+    "nodemon": "^2.0.22",
+    "supertest": "^6.3.3",
+    "ts-jest": "^29.1.0",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.0.4"
   }
 }

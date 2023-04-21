@@ -1,18 +1,20 @@
 #!/bin/sh
 
 # Print a message to the console indicating that the prebuilt modules are being moved.
-echo "Moving prebuilt modules"
+echo "Moving prebuilt application"
 echo "***************************"
 
-# Create a file to indicate that the modules are being moved.
-touch /usr/src/node_modules/_moving
+# Create a file to indicate that the application files are being moved.
+touch /usr/src/prebuilt/_moving
 
 # Move all the modules from /usr/src/node_modules/ to ./node_modules/
-mv /usr/src/node_modules/* ./node_modules/
+cp -r /usr/src/prebuilt/node_modules ./
+
+# Move all the modules from /usr/src/node_modules/ to ./node_modules/
+cp -r /usr/src/prebuilt/dist ./
 
 # Remove the indicator file.
-rm ./node_modules/_moving
-
+rm /usr/src/prebuilt/_moving
 
 # Check if the NODE_ENV environment variable is set to "production".
 if [ "$NODE_ENV" = "production" ]

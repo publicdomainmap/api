@@ -1,23 +1,25 @@
 # Use the official Node.js LTS Alpine image as the base image
 FROM node:lts-alpine3.16
 
-# Set the working directory inside the container
-WORKDIR /usr/src/app
-
-# Create a directory to store prebuilt Node.js modules
-RUN mkdir -p /usr/src/node_modules
-RUN cd /usr/src/node_modules
+# Create a directory to store prebuilt application
+RUN mkdir -p /usr/src/prebuilt
+RUN cd /usr/src/prebuilt
 
 # Copy the package.json and package-lock.json files to the working directory
-COPY package*.json ./
+COPY . /usr/src/prebuilt
 
 # Always get the latest NPM and install Nodemon globally
 RUN npm install -g npm@latest
 RUN npm install -g nodemon
+RUN npm install -g typescript
 
 # Install the production dependencies (only)
-RUN npm install --package-lock
-RUN npm ci --only=production
+RUN cd /usr/src/prebuilt && npm install
 
-# Move back to the main app directory
+# Build the application
+RUN cd /usr/src/prebuilt && npx run build 
+
+# Set the working directory inside the container
+WORKDIR /usr/src/app
+# Move to the main app directory
 RUN cd /usr/src/app
