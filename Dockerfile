@@ -17,7 +17,7 @@ RUN npm install -g typescript
 RUN cd /usr/src/prebuilt && npm install
 
 # Build the application
-RUN cd /usr/src/prebuilt && npx run build 
+RUN cd /usr/src/prebuilt && npm run build 
 
 # Set the working directory inside the container
 WORKDIR /usr/src/app
