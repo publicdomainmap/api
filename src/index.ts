@@ -11,7 +11,6 @@ const HOST = '0.0.0.0';
 // App
 const app = express();
 
-
 // Add the routes
 addRoutes(app, authRoutes, '/oauth');
 addRoutes(app, api06Routes, '/api/0.6');

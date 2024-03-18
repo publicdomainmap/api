@@ -107,7 +107,6 @@ export default [
             // Query the database for the most recent 100 changesets for the given user id
             let dbResult: QueryResult<GetChangesetType> | null, dbError: any;
             const queryParams = (req.query || {}) as ChangesetQueryParams;
-            let whereObj: { [k: string]: { 'operator': string, 'value'?: string | number | number[] } } = {};
 
             const { whereClause, whereValues } = readQueryParams(queryParams);
 

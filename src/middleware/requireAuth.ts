@@ -5,8 +5,6 @@ import { Request, Response, NextFunction } from 'express';
 import { xml2js } from 'xml-js';
 import http from 'http';
 import https from 'https';
-import { QueryResult } from 'pg';
-import { createHash } from 'crypto';
 import { InternalPassword } from '../util/internalPassword';
 
 interface AuthTags {
