@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import query from '../db';
-import { Auth, requireAuth } from '../middleware/requireAuth';
+import { requireAuth } from '../middleware/requireAuth';
 import { Route } from '../addRoutes';
 import sqlStatements, { GetChangesetType, GetUserType } from '../util/sql';
 import { apiError, apiResponse } from '../osm/apiResponse';
@@ -9,7 +9,7 @@ import { URL, URLSearchParams } from 'url';
 import { QueryResult } from 'pg';
 import capabilities from './capabilities';
 import { InternalPassword } from '../util/internalPassword';
-const cgimapServer = 'http://nginx:8080'
+const cgimapServer = 'http://nginx:8080'; // TODO param
 
 export type ChangesetQueryParams = {
     bbox?: string; // Format: min_lon,min_lat,max_lon,max_lat (W,S,E,N)
@@ -78,13 +78,13 @@ export default [
         auth: requireAuth,
         method: 'get',
         fn: (req: Request, res: Response) => {
-            const auth = (req as Request & { auth?: Auth }).auth;
+            const user = (req as Request & { user?: GetUserType['rows'][0] }).user;
             const unauthorizedCode = 401;
 
             let dbResult: QueryResult<GetUserType> | null, dbError: any;
 
-            if (auth && auth.userId !== undefined) {
-                query(sqlStatements.getUser, [auth && auth.userId])
+            if (user && user.id !== undefined) {
+                query(sqlStatements.getUser, [user && user.id])
                     .then(result => (dbResult = result))
                     .catch(error => (dbError = error))
                     .finally(() => {
@@ -107,7 +107,6 @@ export default [
             // Query the database for the most recent 100 changesets for the given user id
             let dbResult: QueryResult<GetChangesetType> | null, dbError: any;
             const queryParams = (req.query || {}) as ChangesetQueryParams;
-            let whereObj: { [k: string]: { 'operator': string, 'value'?: string | number | number[] } } = {};
 
             const { whereClause, whereValues } = readQueryParams(queryParams);
 
@@ -130,7 +129,7 @@ export default [
         method: ['get', 'post', 'delete', 'put'],
         xmlBody: false,
         fn: async (req: Request, res: Response) => {
-            const auth = (req as Request & { auth?: Auth }).auth;
+            const user = (req as Request & { user?: GetUserType['rows'][0] }).user;
 
             const url = new URL(`${cgimapServer}${req.path}`);
             const searchParams = new URLSearchParams();
@@ -139,9 +138,9 @@ export default [
 
             const newHeaders = { ...req.headers };
 
-            if (auth && auth.username) {
+            if (user && user.display_name) {
                 // our auth won't work, so we need to give it the fake one one
-                const password = new InternalPassword(auth.username);
+                const password = new InternalPassword(user.display_name);
 
                 // Update the user password in the db
                 await password.isLoaded();

@@ -1,3 +1,12 @@
+// Dummy variables
+process.env.OPENSTREETMAP_CLIENT_ID='DUMMY VALUE';
+process.env.OPENSTREETMAP_CLIENT_SECRET='DUMMY VALUE';
+process.env.OPENSTREETMAP_CALLBACK_URL='DUMMY VALUE';
+process.env.OPENSTREETMAP_SESSION_SECRET='DUMMY VALUE';
+process.env.OPENSTREETMAP_TOKEN_URL='DUMMY VALUE';
+process.env.OPENSTREETMAP_AUTHORIZATION_URL='DUMMY VALUE';
+process.env.OPENSTREETMAP_API_URL='DUMMY VALUE';
+
 import { readQueryParams } from './api06Routes'; // Update the import to point to your actual function file
 
 describe('buildWhereClauseAndValues', () => {
