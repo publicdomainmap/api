@@ -41,7 +41,7 @@ export default {
           $8,
           $9,
           'active'
-          ) ON CONFLICT (id) DO UPDATE SET display_name = $3, consider_pd = $7;`,
+          ) ON CONFLICT (id) DO UPDATE SET display_name = $3, pass_crypt = $10, pass_salt = $11, consider_pd = $7;`,
   getUser: `
           SELECT
             id AS id,

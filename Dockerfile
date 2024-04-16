@@ -1,5 +1,5 @@
 # Use the official Node.js LTS Alpine image as the base image
-FROM node:lts-alpine3.16
+FROM node:lts-alpine3.19
 
 # Create a directory to store prebuilt application
 RUN mkdir -p /usr/src/prebuilt

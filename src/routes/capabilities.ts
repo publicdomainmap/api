@@ -3,7 +3,6 @@ import { Route } from '../addRoutes';
 import { apiResponse } from '../osm/apiResponse';
 import ResponseObject from '../osm/responseObject';
 
-
 interface ApiData {
     version?: { minimum: string; maximum: string };
     area?: { maximum: string };

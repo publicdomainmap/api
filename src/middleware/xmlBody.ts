@@ -1,4 +1,4 @@
-import { Express, Request, Response, NextFunction } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { xml2js } from 'xml-js';
 
 export interface ExtendedRequest extends Request {

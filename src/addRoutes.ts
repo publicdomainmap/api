@@ -1,6 +1,8 @@
 import { Application, NextFunction, Request, Response } from 'express';
 import cors, { CorsOptions } from 'cors';
 import xmlBody from './middleware/xmlBody';
+import session from 'express-session';
+import passport from 'passport';
 
 /**
  * This function takes an Express app object,
@@ -21,9 +23,9 @@ type routeMethods = 'get' | 'post' | 'put' | 'delete';
 
 export interface Route {
     method: routeMethods | routeMethods[];
-    path: string;
+    path?: string;
     fn: (req: Request, res: Response, next?: NextFunction) => void;
-    auth?: (req: Request, res: Response, next?: NextFunction) => void;
+    auth?: boolean;
     xmlBody?: ((req: Request, res: Response, next?: NextFunction) => void) | false;
     cors?: CorsOptions | false;
 }
@@ -51,8 +53,10 @@ const addRoutes = (
         } else {
             let middlewareFunctions: Array<(req: Request, res: Response, next: NextFunction) => void> = [];
 
-            if (route.auth && typeof route.auth === 'function') {
-                middlewareFunctions.push(route.auth);
+            if (route.auth === true) {
+                middlewareFunctions.push(session({ secret: 'your secret', resave: false, saveUninitialized: true }));
+                middlewareFunctions.push(passport.initialize());
+                middlewareFunctions.push(passport.session());
             }
 
             if (route.cors === undefined) {

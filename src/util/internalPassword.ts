@@ -74,7 +74,8 @@ export class InternalPassword {
                 `SELECT id, to_char(creation_time, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as creation_time, pass_salt, pass_crypt FROM users WHERE display_name = $1;`,
                 [displayName]
             );
-            if (userInfo && userInfo.rowCount > 0) {
+
+            if (userInfo && userInfo.rowCount !== null && userInfo.rowCount > 0) {
                 this._salt = userInfo.rows[0].pass_salt;
                 this._crypt = userInfo.rows[0].pass_crypt;
                 this._attributes = {
@@ -92,7 +93,10 @@ export class InternalPassword {
     }
 
     /**
-     * Returns the salt used for hashing the password.
+     * Gets the salt value for the password.
+     * 
+     * @returns The salt value as a string.
+     * @throws An error if the password attributes are not set.
      */
     get salt(): string {
         if (this._salt) return this._salt;
@@ -153,5 +157,4 @@ export class InternalPassword {
         }
         return new Uint32Array([hash])[0].toString(36);
     }
-
 }
